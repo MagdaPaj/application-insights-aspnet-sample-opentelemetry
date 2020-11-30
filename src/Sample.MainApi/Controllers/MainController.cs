@@ -38,8 +38,8 @@ namespace Sample.MainApi.Controllers
             this.logger = logger;
             this.metrics = metrics;
             this.channelWriter = channelWriter;
-            var tracerFactory = serviceProvider.GetService<TracerFactoryBase>();
-            this.tracer = tracerFactory?.GetApplicationTracer();
+            var tracerProvider = serviceProvider.GetService<TracerProvider>();
+            this.tracer = tracerProvider?.GetApplicationTracer();
 
             this.telemetryClient = serviceProvider.GetService<TelemetryClient>();
         }

@@ -16,6 +16,7 @@ namespace Sample.MainApi.HostedServices
 {
     public class HelloHostedService : IHostedService
     {
+        private static readonly ActivitySource ActivitySource = new ActivitySource("Sample.MainApi.HostedServices");
         private readonly Tracer tracer;
         private readonly TelemetryClient telemetryClient;
         CancellationTokenSource cts;
@@ -24,8 +25,8 @@ namespace Sample.MainApi.HostedServices
 
         public HelloHostedService(IServiceProvider serviceProvider, ChannelReader<HelloRequest> channelReader)
         {
-            var tracerFactory = serviceProvider.GetService<TracerFactoryBase>();
-            this.tracer = tracerFactory?.GetApplicationTracer();
+            var tracerProvider = serviceProvider.GetService<TracerProvider>();
+            this.tracer = tracerProvider?.GetApplicationTracer();
 
             this.telemetryClient = serviceProvider.GetService<TelemetryClient>();
             cts = new CancellationTokenSource();
@@ -43,12 +44,20 @@ namespace Sample.MainApi.HostedServices
         {
             async Task<(Activity Activity, string Message)> OpenTelemetrySayHello(DateTime start, string city)
             {
-                var res = await RawSayHello(start, city);
-                var span = tracer.StartSpanFromActivity(res.Activity.OperationName, res.Activity, SpanKind.Consumer);
+                //var res = await RawSayHello(start, city);
+                //var span = tracer.StartSpanFromActivity(res.Activity.OperationName, res.Activity, SpanKind.Consumer);
 
-                span.End();
+                //span.End();
+                //return res;
 
-                return res;
+                var activityName = "Single Say Hello";
+                using (var activity = ActivitySource.StartActivity(activityName, ActivityKind.Consumer))
+                {
+
+                    activity.AddBaggage("city", city);
+                    await Task.Delay(10);
+                    return (activity, $"{start}: Hello {city}");
+                }
             }
 
             async Task<(Activity Activity, string Message)> ApplicationInsightsSayHello(DateTime start, string city)

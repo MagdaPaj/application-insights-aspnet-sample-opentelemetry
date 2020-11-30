@@ -52,8 +52,8 @@ namespace Sample.RabbitMQProcessor
 
             // Only using Service Provider because some of the services might not have been registered
             // depending on the choice of the SDK
-            var tracerFactory = serviceProvider.GetService<TracerFactoryBase>();
-            this.tracer = tracerFactory?.GetApplicationTracer();
+            var tracerProvider = serviceProvider.GetService<TracerProvider>();
+            this.tracer = tracerProvider?.GetApplicationTracer();
             this.telemetryClient = serviceProvider.GetService<TelemetryClient>();
             this.jsonSerializerOptions = new JsonSerializerOptions
             {
@@ -173,7 +173,7 @@ namespace Sample.RabbitMQProcessor
                 if (span != null)
                 {
                     span.SetAttribute("error", true);
-                    span.Status = Status.Internal.WithDescription(ex.ToString());
+                    span.Status = Status.Error.WithDescription(ex.ToString());
                 }
 
                 if (operation != null)

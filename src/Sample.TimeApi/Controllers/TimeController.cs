@@ -22,8 +22,8 @@ namespace Sample.TimeApi.Controllers
         {
             this.repository = repository ?? throw new ArgumentNullException(nameof(repository));
             this.logger = logger;
-            var tracerFactory = serviceProvider.GetService<TracerFactoryBase>();
-            this.tracer = tracerFactory?.GetApplicationTracer();
+            var tracerProvider = serviceProvider.GetService<TracerProvider>();
+            this.tracer = tracerProvider?.GetApplicationTracer();
         }
 
         // GET: api/time/dbtime

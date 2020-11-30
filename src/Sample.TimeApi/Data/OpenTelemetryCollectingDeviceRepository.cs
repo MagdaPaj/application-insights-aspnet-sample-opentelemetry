@@ -11,9 +11,9 @@ namespace Sample.TimeApi.Data
         private readonly TDeviceRepository repository;
         private Tracer tracer;
 
-        public OpenTelemetryCollectingDeviceRepository(TDeviceRepository repository, TracerFactoryBase tracerFactory)
+        public OpenTelemetryCollectingDeviceRepository(TDeviceRepository repository, TracerProvider tracerProvider)
         {
-            this.tracer = tracerFactory.GetTracer("sql");
+            this.tracer = tracerProvider.GetTracer("sql");
             this.repository = repository;
         }
 
@@ -29,7 +29,7 @@ namespace Sample.TimeApi.Data
             catch (Exception ex)
             {
                 span.SetAttribute("error", true);
-                span.Status = Status.Internal.WithDescription(ex.ToString());
+                span.SetStatus(Status.Error.WithDescription(ex.ToString()));
                 throw;
             }
             finally
