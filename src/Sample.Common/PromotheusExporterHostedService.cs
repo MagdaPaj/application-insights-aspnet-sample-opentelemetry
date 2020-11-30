@@ -13,8 +13,9 @@ namespace Sample.Common
     {
         private readonly PrometheusExporter exporter;
         private readonly IEnumerable<IAppMetrics> initializers;
-        private Timer timer;
-        private MeterFactoryBase meterFactory;
+        private PrometheusExporterMetricsHttpServer metricsHttpServer;
+        //private Timer timer;
+        private MeterProvider meterProvider;
 
         public PromotheusExporterHostedService(PrometheusExporter exporter, IEnumerable<IAppMetrics> initializers)
         {
@@ -24,55 +25,41 @@ namespace Sample.Common
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            //var metricsHttpServer = new PrometheusExporterMetricsHttpServer(this.exporter);
-            //metricsHttpServer.Start();
+            this.metricsHttpServer = new PrometheusExporterMetricsHttpServer(this.exporter);
+            metricsHttpServer.Start();
 
-            //var processor = new UngroupedBatcher();
+            var processor = new UngroupedBatcher();
             var interval = TimeSpan.FromSeconds(5);
 
-            //MeterProvider.SetDefault(OpenTelemetry.Sdk.CreateMeterProviderBuilder()
-            //    .SetProcessor(processor)
-            //    .SetExporter(exporter)
-            //    .SetPushInterval(interval)
-            //    .Build());
+            MeterProvider.SetDefault(OpenTelemetry.Sdk.CreateMeterProviderBuilder()
+                .SetProcessor(processor)
+                .SetExporter(exporter)
+                .SetPushInterval(interval)
+                .Build());
 
-            //var meterProvider = MeterProvider.Default;
-            //var meter = meterProvider.GetMeter("MyMeter");
+            this.meterProvider = MeterProvider.Default;
 
-            var simpleProcessor = new UngroupedBatcher(exporter, interval);
-            this.meterFactory = MeterFactoryBase.Create(simpleProcessor);
+            //var simpleProcessor = new UngroupedBatcher(exporter, interval);
+            //this.meterFactory = MeterFactoryBase.Create(simpleProcessor);
 
             foreach (var initializer in initializers)
             {
-                initializer.Initialize(meterFactory);
+                initializer.Initialize(this.meterProvider);
             }
 
-            this.timer = new Timer(CollectMetrics, meterFactory, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+            //this.timer = new Timer(CollectMetrics, meterFactory, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
 
-            exporter.Start();
+            //exporter.Start();
 
-            this.timer.Change(interval, interval);
+            //this.timer.Change(interval, interval);
 
             return Task.CompletedTask;
         }
 
-
-        /// <summary>
-        /// Need to dig deeper into this
-        /// This call should not be needed
-        /// </summary>
-        /// <param name="state"></param>
-        private static void CollectMetrics(object state)
-        {
-            var meterFactory = (MeterFactoryBase)state;
-            var m = meterFactory.GetMeter("Sample App");
-            ((MeterSdk)m).Collect();
-        }
-
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            exporter.Stop();
-            timer.Dispose();
+            this.metricsHttpServer.Stop();
+            //timer.Dispose();
             return Task.CompletedTask;
         }
     }

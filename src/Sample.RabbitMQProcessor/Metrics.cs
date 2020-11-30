@@ -4,7 +4,6 @@ using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Metrics;
 using Microsoft.Extensions.DependencyInjection;
 using OpenTelemetry.Metrics;
-using OpenTelemetry.Metrics.Configuration;
 using OpenTelemetry.Trace;
 using Sample.Common;
 
@@ -16,8 +15,8 @@ namespace Sample.RabbitMQProcessor
         private readonly Metric appInsightsProcessedFailedItemCounter;
 
         private Meter meter;
-        private Counter<long> openTelemetryProcessedItemCounter;
-        private Counter<long> openTelemetryProcessedFailedItemCounter;
+        private CounterMetric<long> openTelemetryProcessedItemCounter;
+        private CounterMetric<long> openTelemetryProcessedFailedItemCounter;
 
         public Metrics(IServiceProvider serviceProvider)
         {
@@ -29,9 +28,9 @@ namespace Sample.RabbitMQProcessor
             }
         }
 
-        void IAppMetrics.Initialize(MeterFactory meterFactory)
+        void IAppMetrics.Initialize(MeterProvider meterProvider)
         {
-            this.meter = meterFactory.GetMeter("Sample App");
+            this.meter = meterProvider.GetMeter("Sample App");
             this.openTelemetryProcessedItemCounter = meter.CreateInt64Counter("Processed Item");
             this.openTelemetryProcessedFailedItemCounter = meter.CreateInt64Counter("Processed Failed Item");
 

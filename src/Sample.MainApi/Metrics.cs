@@ -24,9 +24,9 @@ namespace Sample.MainApi
             }
         }
 
-        void IAppMetrics.Initialize(MeterFactoryBase meterFactory)
+        void IAppMetrics.Initialize(MeterProvider meterProvider)
         {
-            this.meter = meterFactory.GetMeter("Sample App");
+            this.meter = meterProvider.GetMeter("Sample App");
             this.openTelemetryItemEnqueuedCounter = meter.CreateInt64Counter("Enqueued Item");
         }
 

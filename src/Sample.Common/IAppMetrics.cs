@@ -4,6 +4,6 @@ namespace Sample.Common
 {
     public interface IAppMetrics
     {
-        void Initialize(MeterFactoryBase meterFactory);
+        void Initialize(MeterProvider meterProvider);
     }
 }
