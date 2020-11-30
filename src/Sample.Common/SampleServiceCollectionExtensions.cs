@@ -132,6 +132,7 @@ namespace Sample.Common
 
                 builder
                     .SetSampler(new AlwaysOnSampler())
+                    .AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
                     //.AddDependencyCollector(config =>
                     //{
