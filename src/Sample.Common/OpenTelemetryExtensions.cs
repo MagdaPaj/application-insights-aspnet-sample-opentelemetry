@@ -15,9 +15,9 @@ namespace Sample.Common
             appTracerVersion = $"semver:{ApplicationInformation.Version.ToString()}";
         }
 
-        public static Tracer GetApplicationTracer(this TracerFactoryBase tracerFactory)
+        public static Tracer GetApplicationTracer(this TracerProvider tracerProvider)
         {
-            return tracerFactory.GetTracer(TracerServiceName, appTracerVersion);
+            return tracerProvider.GetTracer(TracerServiceName, appTracerVersion);
         }
     }
 }

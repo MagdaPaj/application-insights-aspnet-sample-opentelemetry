@@ -1,9 +1,9 @@
-﻿using OpenTelemetry.Metrics.Configuration;
+﻿using OpenTelemetry.Metrics;
 
 namespace Sample.Common
 {
     public interface IAppMetrics
     {
-        void Initialize(MeterFactory meterFactory);
+        void Initialize(MeterFactoryBase meterFactory);
     }
 }

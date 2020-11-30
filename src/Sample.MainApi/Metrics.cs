@@ -4,7 +4,6 @@ using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Metrics;
 using Microsoft.Extensions.DependencyInjection;
 using OpenTelemetry.Metrics;
-using OpenTelemetry.Metrics.Configuration;
 using OpenTelemetry.Trace;
 using Sample.Common;
 
@@ -14,7 +13,7 @@ namespace Sample.MainApi
     {
         private readonly Metric appInsightsItemEnqueuedCounter;
         private Meter meter;
-        private Counter<long> openTelemetryItemEnqueuedCounter;
+        private CounterMetric<long> openTelemetryItemEnqueuedCounter;
 
         public Metrics(IServiceProvider serviceProvider)
         {
@@ -25,7 +24,7 @@ namespace Sample.MainApi
             }
         }
 
-        void IAppMetrics.Initialize(MeterFactory meterFactory)
+        void IAppMetrics.Initialize(MeterFactoryBase meterFactory)
         {
             this.meter = meterFactory.GetMeter("Sample App");
             this.openTelemetryItemEnqueuedCounter = meter.CreateInt64Counter("Enqueued Item");

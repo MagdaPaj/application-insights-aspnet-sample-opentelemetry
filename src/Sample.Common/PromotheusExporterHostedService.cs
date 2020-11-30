@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using OpenTelemetry.Exporter.Prometheus;
 using OpenTelemetry.Metrics;
-using OpenTelemetry.Metrics.Configuration;
 using OpenTelemetry.Metrics.Export;
 
 namespace Sample.Common
@@ -15,7 +14,7 @@ namespace Sample.Common
         private readonly PrometheusExporter exporter;
         private readonly IEnumerable<IAppMetrics> initializers;
         private Timer timer;
-        private MeterFactory meterFactory;
+        private MeterFactoryBase meterFactory;
 
         public PromotheusExporterHostedService(PrometheusExporter exporter, IEnumerable<IAppMetrics> initializers)
         {
@@ -25,9 +24,23 @@ namespace Sample.Common
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
+            //var metricsHttpServer = new PrometheusExporterMetricsHttpServer(this.exporter);
+            //metricsHttpServer.Start();
+
+            //var processor = new UngroupedBatcher();
             var interval = TimeSpan.FromSeconds(5);
+
+            //MeterProvider.SetDefault(OpenTelemetry.Sdk.CreateMeterProviderBuilder()
+            //    .SetProcessor(processor)
+            //    .SetExporter(exporter)
+            //    .SetPushInterval(interval)
+            //    .Build());
+
+            //var meterProvider = MeterProvider.Default;
+            //var meter = meterProvider.GetMeter("MyMeter");
+
             var simpleProcessor = new UngroupedBatcher(exporter, interval);
-            this.meterFactory = MeterFactory.Create(simpleProcessor);
+            this.meterFactory = MeterFactoryBase.Create(simpleProcessor);
 
             foreach (var initializer in initializers)
             {
@@ -51,7 +64,7 @@ namespace Sample.Common
         /// <param name="state"></param>
         private static void CollectMetrics(object state)
         {
-            var meterFactory = (MeterFactory)state;
+            var meterFactory = (MeterFactoryBase)state;
             var m = meterFactory.GetMeter("Sample App");
             ((MeterSdk)m).Collect();
         }
