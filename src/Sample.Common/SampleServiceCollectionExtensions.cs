@@ -2,11 +2,9 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using OpenTelemetry.Trace.Configuration;
-using OpenTelemetry.Trace.Samplers;
+using OpenTelemetry.Trace;
 using System.Reflection;
 using OpenTelemetry.Resources;
-using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Microsoft.ApplicationInsights.Extensibility;
 using System.IO;
@@ -19,7 +17,7 @@ namespace Sample.Common
 {
     public static class SampleServiceCollectionExtensions
     {
-        public static IServiceCollection AddWebSampleTelemetry(this IServiceCollection services, IConfiguration configuration, Action<TracerBuilder> traceBuilder = null)
+        public static IServiceCollection AddWebSampleTelemetry(this IServiceCollection services, IConfiguration configuration, Action<TracerProviderBuilder> traceBuilder = null)
         {
             var sampleAppOptions = configuration.GetSampleAppOptions();
 
@@ -46,17 +44,17 @@ namespace Sample.Common
         }
 
 
-        static IServiceCollection AddSampleOpenTelemetry(this IServiceCollection services, SampleAppOptions sampleAppOptions, IConfiguration configuration, Action<TracerBuilder> traceBuilder = null)
+        static IServiceCollection AddSampleOpenTelemetry(this IServiceCollection services, SampleAppOptions sampleAppOptions, IConfiguration configuration, Action<TracerProviderBuilder> traceBuilder = null)
         {
             var openTelemetryConfigSection = configuration.GetSection("OpenTelemetry");
             var jaegerConfigSection = openTelemetryConfigSection.GetSection("Jaeger");
             services.Configure<JaegerExporterOptions>(jaegerConfigSection);
 
             var zipkinConfigSection = openTelemetryConfigSection.GetSection("Zipkin");
-            services.Configure<ZipkinTraceExporterOptions>(zipkinConfigSection);            
+            services.Configure<ZipkinExporterOptions>(zipkinConfigSection);            
 
             // setup open telemetry
-            services.AddOpenTelemetry((sp, builder) =>
+            services.AddOpenTelemetryTracing((sp, builder) =>
             {
                 var serviceName = OpenTelemetryExtensions.TracerServiceName;
 
@@ -64,14 +62,14 @@ namespace Sample.Common
 
                 if (zipkinConfigSection.Exists())
                 {
-                    var zipkinOptions = sp.GetService<IOptions<ZipkinTraceExporterOptions>>();
+                    var zipkinOptions = sp.GetService<IOptions<ZipkinExporterOptions>>();
                     if (zipkinOptions.Value != null && zipkinOptions.Value.Endpoint != null)
                     {
                         // To start zipkin:
                         // docker run -d -p 9411:9411 openzipkin/zipkin
                         exporterCount++;
 
-                        builder.UseZipkin(o =>
+                        builder.AddZipkinExporter(o =>
                         {
                             o.Endpoint = zipkinOptions.Value.Endpoint;
                             o.ServiceName = serviceName;
@@ -85,12 +83,13 @@ namespace Sample.Common
                 if (!string.IsNullOrWhiteSpace(sampleAppOptions.ApplicationInsightsForOpenTelemetryInstrumentationKey))
                 {
                     exporterCount++;
+                    // TODO FIND CORRECT EXPORTER
 
-                    builder.UseApplicationInsights(o =>
-                    {
-                        o.InstrumentationKey = sampleAppOptions.ApplicationInsightsForOpenTelemetryInstrumentationKey;
-                        o.TelemetryInitializers.Add(new CloudRoleTelemetryInitializer());
-                    });
+                    //builder.UseApplicationInsights(o =>
+                    //{
+                    //    o.InstrumentationKey = sampleAppOptions.ApplicationInsightsForOpenTelemetryInstrumentationKey;
+                    //    o.TelemetryInitializers.Add(new CloudRoleTelemetryInitializer());
+                    //});
 
                     Console.WriteLine("Using OpenTelemetry ApplicationInsights exporter");
                 }
@@ -113,12 +112,12 @@ namespace Sample.Common
                     {
                         exporterCount++;
 
-                        builder.UseJaeger(o =>
+                        builder.AddJaegerExporter(o =>
                         {
-                            o.ServiceName = serviceName;
+                            //o.ServiceName = serviceName;
                             o.AgentHost = jaegerOptions.Value.AgentHost;
                             o.AgentPort = jaegerOptions.Value.AgentPort;
-                            o.MaxPacketSize = jaegerOptions.Value.MaxPacketSize;
+                            //o.MaxPacketSize = jaegerOptions.Value.MaxPacketSize;
                             o.ProcessTags = jaegerOptions.Value.ProcessTags;
                         });
 
@@ -132,16 +131,14 @@ namespace Sample.Common
                 }
 
                 builder
-                    .SetSampler(new AlwaysSampleSampler())
-                    .AddDependencyCollector(config =>
-                    {
-                        config.SetHttpFlavor = true;
-                    })
-                    .AddRequestCollector()
-                    .SetResource(new Resource(new Dictionary<string, object>
-                    {
-                        { "service.name", serviceName }
-                    }));
+                    .SetSampler(new AlwaysOnSampler())
+                    .AddHttpClientInstrumentation()
+                    //.AddDependencyCollector(config =>
+                    //{
+                    //    config.SetHttpFlavor = true;
+                    //})
+                    //.AddRequestCollector()
+                    .SetResourceBuilder (ResourceBuilder.CreateDefault().AddService(serviceName));
 
                 traceBuilder?.Invoke(builder);
             });
